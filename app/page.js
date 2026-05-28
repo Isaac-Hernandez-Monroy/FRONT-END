@@ -98,7 +98,13 @@ export default function Home() {
     setHistoryError("");
 
     try {
-      const response = await fetch(`${API_BASE}/history`);
+      const response = await fetch(`${API_BASE}/history`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -120,7 +126,13 @@ export default function Home() {
     setSelectedNews(null);
 
     try {
-      const response = await fetch(`${API_BASE}/history/${idNoticia}`);
+      const response = await fetch(`${API_BASE}/history/${idNoticia}`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
       const data = await response.json();
 
       if (!response.ok) {
