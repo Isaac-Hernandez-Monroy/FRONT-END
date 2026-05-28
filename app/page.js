@@ -3,8 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-const ITEMS_PER_PAGE = 10;
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";const ITEMS_PER_PAGE = 10;
 const MIN_LOADING_TIME = 1200;
 
 export default function Home() {
@@ -169,7 +169,8 @@ export default function Home() {
 
     setInput("");
     setTitleInput("");
-
+    console.log("API_BASE:", API_BASE);
+    console.log("URL final:", `${API_BASE}/analyze`);
     const controller = new AbortController();
     controllerRef.current = controller;
     const loadingStart = Date.now();
