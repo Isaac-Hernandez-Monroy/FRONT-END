@@ -183,6 +183,7 @@ export default function Home() {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      "ngrok-skip-browser-warning": "true",
     },
     body: JSON.stringify(body),
     signal: controller.signal,
