@@ -4,7 +4,8 @@ import { useMemo, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";const ITEMS_PER_PAGE = 10;
+  process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
+const ITEMS_PER_PAGE = 10;
 const MIN_LOADING_TIME = 1200;
 
 export default function Home() {
@@ -22,6 +23,8 @@ export default function Home() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
   const [historySearch, setHistorySearch] = useState("");
+  const [historyStartDate, setHistoryStartDate] = useState("");
+  const [historyEndDate, setHistoryEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedNews, setSelectedNews] = useState(null);
@@ -41,20 +44,35 @@ export default function Home() {
       .trim();
 
   const filteredHistory = useMemo(() => {
-    const query = normalizeSearch(historySearch);
+  const query = normalizeSearch(historySearch);
 
-    if (!query) return history;
+  return history.filter((item) => {
+    const searchable = normalizeSearch(
+      `${item.texto_original || ""} ${item.etiqueta || ""} ${
+        item.fuente_url || ""
+      }`
+    );
 
-    return history.filter((item) => {
-      const searchable = normalizeSearch(
-        `${item.texto_original || ""} ${item.etiqueta || ""} ${
-          item.fuente_url || ""
-        }`
-      );
+    const matchesSearch = !query || searchable.includes(query);
 
-      return searchable.includes(query);
-    });
-  }, [history, historySearch]);
+    const itemDate = item.fecha_clasificacion
+      ? new Date(item.fecha_clasificacion)
+      : null;
+
+    const startDate = historyStartDate
+      ? new Date(`${historyStartDate}T00:00:00`)
+      : null;
+
+    const endDate = historyEndDate
+      ? new Date(`${historyEndDate}T23:59:59`)
+      : null;
+
+    const matchesStart = !startDate || (itemDate && itemDate >= startDate);
+    const matchesEnd = !endDate || (itemDate && itemDate <= endDate);
+
+    return matchesSearch && matchesStart && matchesEnd;
+  });
+}, [history, historySearch, historyStartDate, historyEndDate]);
 
   const totalPages = Math.max(
     1,
@@ -285,8 +303,9 @@ export default function Home() {
             onClick={handleGoHome}
             title="Inicio"
           >
-            🏠
-          </button>
+          <span className="nav-icon">🏠</span>
+          <span className="nav-text">Inicio</span>
+        </button>
 
           <button
             type="button"
@@ -294,7 +313,8 @@ export default function Home() {
             onClick={handleGoHistory}
             title="Historial"
           >
-            📋
+            <span className="nav-icon">📋</span>
+            <span className="nav-text">Historial</span>
           </button>
         </div>
 
@@ -336,7 +356,7 @@ export default function Home() {
                 Texto
               </button>
             </div>
-
+    
             {mode === "url" ? (
               <input
                 className="news-input"
@@ -361,6 +381,7 @@ export default function Home() {
                 />
               </div>
             )}
+            
             <div className="captcha-box">
               <ReCAPTCHA
                 ref={captchaRef}
@@ -377,8 +398,10 @@ export default function Home() {
             >
               Analizar
             </button>
+            
 
             {error && <p className="error-message">{error}</p>}
+            
           </section>
 
           <section className="result-card">
@@ -430,39 +453,80 @@ export default function Home() {
             )}
           </section>
         </section>
+        
       )}
-
+      
       {view === "history" && (
         <section className="history-content">
           <div className="history-tools">
-            <div className="search-box">
-              <span className="search-icon">🔎</span>
+          <div className="search-box">
+            <span className="search-icon">🔎</span>
 
-              <input
-                className="history-search"
-                value={historySearch}
-                onChange={(event) => {
-                  setHistorySearch(event.target.value);
+            <input
+              className="history-search"
+              value={historySearch}
+              onChange={(event) => {
+                setHistorySearch(event.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Buscar noticia analizada..."
+            />
+
+            {historySearch && (
+              <button
+                type="button"
+                className="clear-search"
+                onClick={() => {
+                  setHistorySearch("");
                   setCurrentPage(1);
                 }}
-                placeholder="Buscar noticia analizada..."
-              />
-
-              {historySearch && (
-                <button
-                  type="button"
-                  className="clear-search"
-                  onClick={() => {
-                    setHistorySearch("");
-                    setCurrentPage(1);
-                  }}
-                  title="Limpiar búsqueda"
-                >
-                  ×
-                </button>
-              )}
-            </div>
+                title="Limpiar búsqueda"
+              >
+                ×
+              </button>
+            )}
           </div>
+
+          <div className="date-filter-box">
+            <label>
+              📅 Desde
+              <input
+                type="date"
+                value={historyStartDate}
+                onChange={(event) => {
+                  setHistoryStartDate(event.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </label>
+
+            <label>
+              📅 Hasta
+              <input
+                type="date"
+                value={historyEndDate}
+                onChange={(event) => {
+                  setHistoryEndDate(event.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </label>
+
+            {(historyStartDate || historyEndDate) && (
+              <button
+                type="button"
+                className="clear-date-filter"
+                onClick={() => {
+                  setHistoryStartDate("");
+                  setHistoryEndDate("");
+                  setCurrentPage(1);
+                }}
+              >
+                Limpiar fechas
+              </button>
+            )}
+          </div>
+        </div>
 
           {historyLoading && (
             <p className="history-message">Cargando historial...</p>
@@ -486,12 +550,26 @@ export default function Home() {
                   onClick={() => loadNewsDetail(item.id_noticia)}
                 >
                   <div className="history-info">
-                    <h2 title={getPreviewTitle(item)}>
-                      {getPreviewTitle(item)}
-                    </h2>
 
-                    <p>{getPreviewText(item.texto_original)}</p>
-                  </div>
+                  <span
+                    className={
+                      item.fuente_url
+                        ? "source-badge url-source"
+                        : "source-badge manual-source"
+                    }
+                  >
+                    {item.fuente_url
+                      ? "Origen: URL"
+                      : "Origen: Texto manual"}
+                  </span>
+
+                  <h2 title={getPreviewTitle(item)}>
+                    {getPreviewTitle(item)}
+                  </h2>
+
+                  <p>{getPreviewText(item.texto_original)}</p>
+
+                </div>
 
                   <div className="history-status">
                     <span
@@ -628,7 +706,15 @@ export default function Home() {
           )}
         </section>
       )}
+      <footer className="app-footer">
+        <p>
+          El sistema únicamente analiza contenido textual. No se realiza procesamiento de imágenes, audio o video.
+        </p>
 
+        <p>
+          La clasificación corresponde a una estimación generada mediante análisis lingüístico automatizado del texto proporcionado y no constituye una verificación absoluta de la información.
+        </p>
+      </footer>
       {loading && (
         <div className="loading-overlay">
           <div className="loading-modal">
