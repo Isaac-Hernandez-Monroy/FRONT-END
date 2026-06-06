@@ -958,3 +958,20 @@ RESPONSIVE
     font-size: 10px;
   }
 }
+.icon-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.nav-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.nav-text {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
